@@ -66,6 +66,7 @@ static void My_MPI_Gather(int send_buf[], int send_count, MPI_Datatype send_type
 	}
 }
 
+
 void zadanie1()
 {
 	int done = 0, n, i;
@@ -85,38 +86,38 @@ void zadanie1()
 	n = 0;
 	while (!done)
 	{
-	if (myid == 0)
-	{
-	cout << "Enter the number of intervals: (0 quits) ";
-	cin >> n;
+		if (myid == 0)
+		{
+			cout << "Enter the number of intervals: (0 quits) ";
+			cin >> n;
 
-	startwtime = MPI_Wtime();
-	}
-	My_MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			startwtime = MPI_Wtime();
+		}
+		My_MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	if (n == 0)
-	done = 1;
-	else
-	{
-	h = 1.0 / (double)n;
-	sum = 0.0;
-	for (i = myid + 1; i <= n; i += numprocs)
-	{
-	x = h * ((double)i - 0.5);
-	sum += f(x);
-	}
-	mypi = h * sum;
+		if (n == 0)
+			done = 1;
+		else
+		{
+			h = 1.0 / (double)n;
+			sum = 0.0;
+			for (i = myid + 1; i <= n; i += numprocs)
+			{
+				x = h * ((double)i - 0.5);
+				sum += f(x);
+			}
+			mypi = h * sum;
 
-	MPI_Reduce(&mypi, &pi, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+			MPI_Reduce(&mypi, &pi, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-	if (myid == 0)
-	{
-	cout << "pi is approximately " << pi << " Error is " << fabs(pi - PI25DT) << "\n";
+			if (myid == 0)
+			{
+				cout << "pi is approximately " << pi << " Error is " << fabs(pi - PI25DT) << "\n";
 
-	endwtime = MPI_Wtime();
-	cout << "wall clock time = " << endwtime - startwtime << "\n";
-	}
-	}
+				endwtime = MPI_Wtime();
+				cout << "wall clock time = " << endwtime - startwtime << "\n";
+			}
+		}
 	}
 	MPI_Finalize();
 }
@@ -191,13 +192,75 @@ void zadanie3()
 
 	MPI_Finalize();
 }
+void zadanie5()
+{
+
+	double val, l, r;
+	int size, rank, t;
+
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	int left = (rank > 0 ? rank - 1 : size - 1);
+	int right = (rank < size - 1 ? rank + 1 : 0);
+
+	if (rank == 0) {
+		cout << "Enter the number of iterations: ";
+		cin >> t;
+		cout << "Enter " << size << " values: ";
+		for (int i = 0; i < size; ++i) {
+			double a;
+			cin >> a;
+			if (i != 0) {
+				MPI_Send(&t, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+				MPI_Send(&a, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+			}
+			else {
+				val = a;
+			}
+		}
+	}
+	else {
+		MPI_Recv(&t, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(&val, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	}
+
+	for (int i = 0; i < t; ++i) {
+		MPI_Send(&val, 1, MPI_DOUBLE, left, 0, MPI_COMM_WORLD);
+ 		MPI_Send(&val, 1, MPI_DOUBLE, right, 0, MPI_COMM_WORLD);
+
+		MPI_Recv(&l, 1, MPI_DOUBLE, left, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(&r, 1, MPI_DOUBLE, right, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+		val = (l + val + val + r) / 4.0;
+	}
+
+	if (rank == 0) {
+		cout << "Smoothed vector: ";
+		for (int i = 0; i < size; ++i) {
+			double a;
+			if (i == 0) {
+				a = val;
+			}
+			else {
+				MPI_Recv(&a, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+			cout << a << " ";
+		}
+		cout << "\n";
+	}
+	else {
+		MPI_Send(&val, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
+	MPI_Finalize();
+}
 
 int main(int argc, char *argv[])
 {
 	MPI_Init(&argc, &argv);
 	//zadanie1();
-	zadanie3();
-
+	//zadanie3();
+	zadanie5();
 	
 	return 0;
 }

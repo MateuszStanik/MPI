@@ -12,5 +12,5 @@
 #include <iostream>
 #include <math.h>
 #include "mpi.h"
-
+#include <cassert>
 // TODO: reference additional headers your program requires here
